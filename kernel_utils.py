@@ -305,9 +305,11 @@ def isotropically_resize_image(img, size, interpolation_down=cv2.INTER_AREA, int
 def predict_on_video(face_extractor, video_path, batch_size, input_size, models, strategy=np.mean,
                      apply_compression=False):
     batch_size *= 4
+    print(f'in predict_on_video()')
     try:
         faces = face_extractor.process_video(video_path)
         if len(faces) > 0:
+            print(f'len(faces) > 0 is True')
             x = np.zeros((batch_size, input_size, input_size, 3), dtype=np.uint8)
             n = 0
             for frame_data in faces:
@@ -322,6 +324,7 @@ def predict_on_video(face_extractor, video_path, batch_size, input_size, models,
                     else:
                         pass
             if n > 0:
+                print(f'n > 0 i.e. there is frame_data in faces')
                 x = torch.tensor(x, device="cuda").float()
                 # Preprocess the images.
                 x = x.permute((0, 3, 1, 2))
@@ -335,6 +338,7 @@ def predict_on_video(face_extractor, video_path, batch_size, input_size, models,
                         y_pred = torch.sigmoid(y_pred.squeeze())
                         bpred = y_pred[:n].cpu().numpy()
                         preds.append(strategy(bpred))
+                    print(f'mean prediction: {np.mean(preds)}')
                     return np.mean(preds)
     except Exception as e:
         print("Prediction error on video %s: %s" % (video_path, str(e)))
@@ -346,6 +350,7 @@ def predict_on_video_set(face_extractor, videos, input_size, num_workers, test_d
                          strategy=np.mean,
                          apply_compression=False):
     def process_file(i):
+        print('in process_file')
         filename = videos[i]
         y_pred = predict_on_video(face_extractor=face_extractor, video_path=os.path.join(test_dir, filename),
                                   input_size=input_size,
@@ -354,6 +359,7 @@ def predict_on_video_set(face_extractor, videos, input_size, num_workers, test_d
         return y_pred
 
     with ThreadPoolExecutor(max_workers=num_workers) as ex:
+        print('in "with ThreadPoolExecutor..."')
         predictions = ex.map(process_file, range(len(videos)))
     return list(predictions)
 

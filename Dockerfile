@@ -12,6 +12,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+# Adding code for WSL things
+RUN rm /etc/apt/sources.list.d/cuda.list
+RUN rm /etc/apt/sources.list.d/nvidia-ml.list
+RUN apt-key del 7fa2af80
+RUN apt-get update && apt-get install -y --no-install-recommends wget
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/wsl-ubuntu/x86_64/cuda-keyring_1.0-1_all.deb
+RUN dpkg -i cuda-keyring_1.0-1_all.deb
+
 RUN apt-get update && apt-get install -y libglib2.0-0 libsm6 libxrender-dev libxext6 nano mc glances vim git \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
@@ -21,6 +29,7 @@ RUN conda install cython -y && conda clean --all
 
 # Installing APEX
 RUN pip install -U pip
+RUN pip install packaging
 RUN git clone https://github.com/NVIDIA/apex
 RUN sed -i 's/check_cuda_torch_binary_vs_bare_metal(torch.utils.cpp_extension.CUDA_HOME)/pass/g' apex/setup.py
 RUN pip install -v --no-cache-dir --global-option="--cpp_ext" --global-option="--cuda_ext"  ./apex
@@ -37,6 +46,9 @@ RUN pip install cython jupyter  jupyterlab ipykernel matplotlib tqdm pandas
 RUN apt install wget
 RUN wget https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b7_ns-1dbc32de.pth -P /root/.cache/torch/hub/checkpoints/
 RUN wget https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/tf_efficientnet_b5_ns-6f26d0cf.pth -P /root/.cache/torch/hub/checkpoints/
+
+# Upgrade torchvision to most recent version to match torch version
+RUN pip install --upgrade torchvision
 
 # Setting the working directory
 WORKDIR /workspace
